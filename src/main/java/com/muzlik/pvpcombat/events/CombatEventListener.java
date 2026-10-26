@@ -176,19 +176,33 @@ public class CombatEventListener implements Listener {
                             "defender", defender.getName()));
             // #endregion
             if (!combatManager.isInCombat(attacker) && !combatManager.isInCombat(defender)) {
-                // Switch creative mode players to survival
-                if (attacker.getGameMode() == org.bukkit.GameMode.CREATIVE) {
-                    attacker.setGameMode(org.bukkit.GameMode.SURVIVAL);
-                    attacker.sendMessage(ChatColor.YELLOW + "You have been switched to Survival mode for combat!");
+                // Block creative and spectator mode players from entering combat
+                if (attacker.getGameMode() == org.bukkit.GameMode.CREATIVE
+                        || attacker.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                    event.setCancelled(true);
+                    attacker.sendMessage(ChatColor.RED + "You cannot enter combat while in Creative or Spectator mode!");
+                    return;
                 }
-                if (defender.getGameMode() == org.bukkit.GameMode.CREATIVE) {
-                    defender.setGameMode(org.bukkit.GameMode.SURVIVAL);
-                    defender.sendMessage(ChatColor.YELLOW + "You have been switched to Survival mode for combat!");
+                if (defender.getGameMode() == org.bukkit.GameMode.CREATIVE
+                        || defender.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                    event.setCancelled(true);
+                    attacker.sendMessage(ChatColor.RED + "That player is in Creative or Spectator mode and cannot be attacked!");
+                    return;
                 }
 
                 // Start new combat synchronously
                 combatManager.startCombat(attacker, defender);
             } else {
+                // If either player is already in combat but is now in creative/spectator, end their combat
+                if ((combatManager.isInCombat(attacker) && (attacker.getGameMode() == org.bukkit.GameMode.CREATIVE
+                        || attacker.getGameMode() == org.bukkit.GameMode.SPECTATOR))
+                        || (combatManager.isInCombat(defender) && (defender.getGameMode() == org.bukkit.GameMode.CREATIVE
+                        || defender.getGameMode() == org.bukkit.GameMode.SPECTATOR))) {
+                    event.setCancelled(true);
+                    attacker.sendMessage(ChatColor.RED + "Combat is not allowed in Creative or Spectator mode!");
+                    return;
+                }
+
                 // Reset timer for existing combat synchronously
                 CombatSession timerSession = combatManager.getActiveSessions().values().stream()
                     .filter(s -> s.involvesPlayer(attacker))
@@ -460,31 +474,6 @@ public class CombatEventListener implements Listener {
                 player.sendMessage(ChatColor.RED + "Elytra gliding is restricted during combat!");
             }
         }
-    }
-
-    @EventHandler(priority = EventPriority.NORMAL)
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-        // Check for elytra boost (firework damage to self)
-        if (event.getEntity() instanceof Player && event.getDamager() instanceof org.bukkit.entity.Firework) {
-            Player player = (Player) event.getEntity();
-            org.bukkit.entity.Firework firework = (org.bukkit.entity.Firework) event.getDamager();
-
-            // Check if firework was launched by the player (elytra boost)
-            if (firework.getShooter() instanceof Player && firework.getShooter().equals(player)) {
-                RestrictionData restrictionData = restrictionManager.getOrCreateRestrictionData(player);
-
-                if (!restrictionManager.canUseElytra(player)) {
-                    event.setCancelled(true);
-                    player.sendMessage(ChatColor.RED + "Elytra boosts are restricted during combat!");
-                    return;
-                }
-
-                // Track boost usage
-                restrictionManager.getElytraRestriction().onElytraBoost(player, restrictionData);
-            }
-        }
-
-        // Existing damage handling continues...
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
@@ -824,37 +813,6 @@ public class CombatEventListener implements Listener {
             event.setCancelled(true);
             player.sendMessage(ChatColor.RED + "You cannot break End Crystals during combat!");
         }
-    }
-    
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onTridentLaunch(ProjectileLaunchEvent event) {
-        // Check if projectile is a trident
-        if (!(event.getEntity() instanceof org.bukkit.entity.Trident)) {
-            return;
-        }
-
-        // Get the shooter (player)
-        if (!(event.getEntity().getShooter() instanceof Player)) {
-            return;
-        }
-
-        Player player = (Player) event.getEntity().getShooter();
-
-        // Only check if player is in combat
-        if (!combatManager.isInCombat(player)) {
-            return;
-        }
-
-        // Check if trident restrictions are enabled
-        boolean tridentEnabled = plugin.getConfig().getBoolean("restrictions.trident.enabled", true);
-        if (!tridentEnabled) {
-            return;
-        }
-
-        // ALWAYS block tridents in combat (both throwing and riptide)
-        event.setCancelled(true);
-        player.sendMessage(ChatColor.RED + "You cannot use tridents during combat!");
-        plugin.getLoggingManager().log("[TRIDENT] Blocked " + player.getName() + " from using trident in combat");
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)

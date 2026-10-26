@@ -40,6 +40,7 @@ public class ConfigManager implements IConfigManager {
     private AntiCheatConfig antiCheatConfig;
     private ReplayConfig replayConfig;
     private DisconnectConfig disconnectConfig;
+    private ServerTrackingConfig serverTrackingConfig;
 
     // Reload listeners
     private final List<Runnable> reloadListeners;
@@ -247,7 +248,8 @@ public class ConfigManager implements IConfigManager {
             loggingConfig = new LoggingConfig(validator, mainConfig),
             antiCheatConfig = new AntiCheatConfig(validator, mainConfig),
             replayConfig = new ReplayConfig(validator, mainConfig),
-            disconnectConfig = new DisconnectConfig(validator, mainConfig)
+            disconnectConfig = new DisconnectConfig(validator, mainConfig),
+            serverTrackingConfig = new ServerTrackingConfig(validator, mainConfig)
         );
 
         // Sort by load priority and load
@@ -332,6 +334,10 @@ public class ConfigManager implements IConfigManager {
 
     public DisconnectConfig getDisconnectConfig() {
         return disconnectConfig;
+    }
+
+    public ServerTrackingConfig getServerTrackingConfig() {
+        return serverTrackingConfig;
     }
 
     /**

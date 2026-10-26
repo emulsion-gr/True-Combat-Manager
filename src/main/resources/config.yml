@@ -846,3 +846,36 @@ replay:
       speed: 1.0
       # Interval between events (ticks)
       interval: 4
+
+# ========================================
+# SERVER TRACKING SETTINGS
+# ========================================
+# Enables the plugin to report server status to a tracking website.
+# The plugin sends periodic heartbeats with server IP, online status,
+# player count, version, and other stats. Only the plugin (with the
+# correct API key) can submit data — the website rejects unauthenticated
+# requests.
+server-tracking:
+  # Enable server tracking heartbeat
+  enabled: false
+
+  # URL of the tracking website API endpoint (e.g. https://your-app.vercel.app/api/servers/heartbeat)
+  endpoint: ""
+
+  # Secret API key used to authenticate heartbeat requests.
+  # Must match the key configured on the tracking website.
+  # Generate a strong random key and keep it secret.
+  api-key: ""
+
+  # Unique identifier for this server. If left blank, one is generated
+  # automatically from the server's IP and port on startup.
+  server-id: ""
+
+  # How often to send a heartbeat (seconds). Minimum: 30.
+  heartbeat-interval: 60
+
+  # Timeout for heartbeat requests (seconds)
+  timeout: 10
+
+  # Whether to include detailed stats (player count, TPS, etc.)
+  include-stats: true

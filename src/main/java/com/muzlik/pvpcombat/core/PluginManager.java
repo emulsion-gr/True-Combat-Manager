@@ -22,6 +22,8 @@ import com.muzlik.pvpcombat.utils.VersionCompatibility;
 import com.muzlik.pvpcombat.restrictions.RestrictionManager;
 import com.muzlik.pvpcombat.combat.AntiInterferenceManager;
 import com.muzlik.pvpcombat.protection.NewbieProtection;
+import com.muzlik.pvpcombat.tracking.ServerTracker;
+import com.muzlik.pvpcombat.config.ServerTrackingConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import com.muzlik.pvpcombat.events.CombatEventListener;
@@ -44,6 +46,7 @@ public class PluginManager {
     private NewbieProtection newbieProtection;
     private IDatabaseManager databaseManager;
     private CombatLogger combatLogger;
+    private ServerTracker serverTracker;
 
     public PluginManager(PvPCombatPlugin plugin) {
         this.plugin = plugin;
@@ -80,6 +83,14 @@ public class PluginManager {
         this.combatManager = new CombatManager(plugin, combatLogger, null, performanceMonitor, cacheManager, configManager);
         this.visualManager = new VisualManager(plugin, configManager);
         this.restrictionManager = new RestrictionManager((CombatManager) combatManager, cacheManager);
+
+        // Initialize server tracker (will start heartbeat after config is loaded in onEnable)
+        if (configManager instanceof com.muzlik.pvpcombat.config.ConfigManager) {
+            this.serverTracker = new ServerTracker(plugin, ((com.muzlik.pvpcombat.config.ConfigManager) configManager).getServerTrackingConfig());
+        } else {
+            plugin.getLogger().warning("ConfigManager is not of expected type — server tracking disabled.");
+            this.serverTracker = null;
+        }
 
         plugin.getLogger().info("Plugin managers initialized successfully.");
     }
@@ -155,6 +166,11 @@ public class PluginManager {
         Bukkit.getPluginManager().registerEvents(safeZoneManager, plugin);
         
         plugin.getLogger().info("Event listeners registered.");
+
+        // Start server tracking heartbeat after config is loaded
+        if (serverTracker != null) {
+            serverTracker.start();
+        }
     }
 
     /**
@@ -195,6 +211,11 @@ public class PluginManager {
      * Shuts down all subsystems.
      */
     public void shutdown() {
+        // Shutdown server tracker
+        if (serverTracker != null) {
+            serverTracker.stop();
+        }
+
         // Shutdown combat tracker (saves all data)
         if (combatTracker != null) {
             combatTracker.shutdown();
@@ -240,5 +261,9 @@ public class PluginManager {
     
     public IDatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    public ServerTracker getServerTracker() {
+        return serverTracker;
     }
 }
