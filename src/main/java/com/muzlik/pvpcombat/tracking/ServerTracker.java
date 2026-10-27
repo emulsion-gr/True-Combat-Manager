@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 public class ServerTracker {
 
     /** Hardcoded tracking website API endpoint — cannot be overridden via config. */
-    private static final String API_ENDPOINT = "https://vercel-server-tracker.vercel.app/api/servers/heartbeat";
+    private static final String API_ENDPOINT = "https://truecombat-manager.vercel.app/api/servers/heartbeat";
 
     private final PvPCombatPlugin plugin;
     private final ServerTrackingConfig config;

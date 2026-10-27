@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 public class VersionChecker {
 
     private static final String CURRENT_VERSION = "1.3.0-alpha";
-    private static final String UPDATE_ENDPOINT = "https://vercel-server-tracker.vercel.app/api/plugin/update";
+    private static final String UPDATE_ENDPOINT = "https://truecombat-manager.vercel.app/api/plugin/update";
 
     private final PvPCombatPlugin plugin;
     private final Logger logger;
