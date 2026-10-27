@@ -3,10 +3,8 @@ package com.muzlik.pvpcombat.tracking;
 import com.muzlik.pvpcombat.config.ServerTrackingConfig;
 import com.muzlik.pvpcombat.core.PvPCombatPlugin;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -17,14 +15,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Sends periodic heartbeat requests to a server tracking website.
+ * Sends periodic heartbeat requests to the True Combat Manager tracking website.
  * Reports server IP, online status, player count, version, and other stats.
  *
- * <p>Authentication is done via a Bearer API key sent in the
- * {@code X-API-Key} header. Only the plugin (with the correct key) can
- * submit data — the tracking website rejects unauthenticated requests.</p>
+ * <p>The API endpoint is hardcoded to prevent tampering. Authentication is done
+ * via an {@code X-API-Key} header — only the plugin (with the correct key) can
+ * submit data; the tracking website rejects all unauthenticated requests.</p>
  */
 public class ServerTracker {
+
+    /** Hardcoded tracking website API endpoint — cannot be overridden via config. */
+    private static final String API_ENDPOINT = "https://vercel-server-tracker.vercel.app/api/servers/heartbeat";
 
     private final PvPCombatPlugin plugin;
     private final ServerTrackingConfig config;
@@ -52,10 +53,12 @@ public class ServerTracker {
             logger.info("No server-id configured, generated: " + this.serverId);
         }
 
-        // Create HTTP client with timeout
+        // Create HTTP client with timeout from config
         this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(config.getTimeout()))
             .build();
+
+        logger.info("ServerTracker initialized with hardcoded API endpoint: " + API_ENDPOINT);
     }
 
     /**
@@ -64,12 +67,6 @@ public class ServerTracker {
     public void start() {
         if (!config.isEnabledTracking()) {
             logger.info("Server tracking is disabled — heartbeat not started.");
-            return;
-        }
-
-        String endpoint = config.getEndpoint();
-        if (endpoint == null || endpoint.isEmpty()) {
-            logger.warning("Server tracking enabled but no endpoint configured — heartbeat not started.");
             return;
         }
 
@@ -95,21 +92,16 @@ public class ServerTracker {
     }
 
     /**
-     * Sends a single heartbeat request asynchronously.
+     * Sends a single heartbeat request asynchronously to the hardcoded endpoint.
      */
     private void sendHeartbeat() {
-        String endpoint = config.getEndpoint();
         String apiKey = config.getApiKey();
-
-        if (endpoint == null || endpoint.isEmpty()) {
-            return;
-        }
 
         ServerInfo info = buildServerInfo();
         String json = info.toJson();
 
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(endpoint))
+            .uri(URI.create(API_ENDPOINT))
             .header("Content-Type", "application/json")
             .header("X-API-Key", apiKey != null ? apiKey : "")
             .header("User-Agent", "TrueCombatManager/" + plugin.getDescription().getVersion())
@@ -127,7 +119,7 @@ public class ServerTracker {
                 logger.warning("Heartbeat rejected by server (HTTP " + status + "): " + response.body());
             }
         }).exceptionally(ex -> {
-            logger.log(Level.WARNING, "Failed to send heartbeat to " + endpoint, ex);
+            logger.log(Level.WARNING, "Failed to send heartbeat to " + API_ENDPOINT, ex);
             return null;
         });
     }
@@ -140,7 +132,6 @@ public class ServerTracker {
         int port = Bukkit.getPort();
         String version = Bukkit.getVersion();
         String bukkitVersion = Bukkit.getBukkitVersion();
-        // Extract Minecraft version from the full version string (e.g. "1.20.4" from "MC: 1.20.4" or similar)
         String minecraftVersion = extractMinecraftVersion(version);
         int onlinePlayers = Bukkit.getOnlinePlayers().size();
         int maxPlayers = Bukkit.getMaxPlayers();
@@ -162,7 +153,6 @@ public class ServerTracker {
         if (version == null || version.isEmpty()) {
             return "unknown";
         }
-        // Try to find a version pattern like X.Y.Z
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+\\.\\d+(?:\\.\\d+)?)").matcher(version);
         if (m.find()) {
             return m.group(1);
@@ -182,5 +172,12 @@ public class ServerTracker {
      */
     public boolean isTracking() {
         return config.isEnabledTracking() && heartbeatTask != null;
+    }
+
+    /**
+     * Returns the hardcoded API endpoint URL.
+     */
+    public static String getApiEndpoint() {
+        return API_ENDPOINT;
     }
 }

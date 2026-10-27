@@ -5,11 +5,13 @@ import org.bukkit.configuration.ConfigurationSection;
 /**
  * Server tracking configuration settings.
  * Handles periodic heartbeat reporting to a remote tracking website.
+ *
+ * <p>The API endpoint is hardcoded in {@link com.muzlik.pvpcombat.tracking.ServerTracker}
+ * and cannot be overridden via this configuration.</p>
  */
 public class ServerTrackingConfig extends SubConfig {
 
     private boolean enabled;
-    private String endpoint;
     private String apiKey;
     private String serverId;
     private int heartbeatInterval;
@@ -23,7 +25,6 @@ public class ServerTrackingConfig extends SubConfig {
     @Override
     public void load() {
         enabled = getBoolean("enabled", false);
-        endpoint = getString("endpoint", "");
         apiKey = getString("api-key", "");
         serverId = getString("server-id", "");
         heartbeatInterval = getInt("heartbeat-interval", 60);
@@ -43,13 +44,6 @@ public class ServerTrackingConfig extends SubConfig {
         java.util.List<ConfigurationValidator.ConfigValidationError> info = new java.util.ArrayList<>();
 
         if (enabled) {
-            if (endpoint == null || endpoint.isEmpty()) {
-                errors.add(new ConfigurationValidator.ConfigValidationError(
-                    "server-tracking.endpoint",
-                    "Server tracking is enabled but no endpoint URL is configured.",
-                    endpoint, "https://example.com/api/servers/heartbeat",
-                    ConfigurationValidator.ConfigValidationError.Severity.ERROR));
-            }
             if (apiKey == null || apiKey.isEmpty()) {
                 errors.add(new ConfigurationValidator.ConfigValidationError(
                     "server-tracking.api-key",
@@ -78,8 +72,12 @@ public class ServerTrackingConfig extends SubConfig {
         return enabled;
     }
 
+    /**
+     * @deprecated The API endpoint is hardcoded in ServerTracker and no longer configurable.
+     */
+    @Deprecated
     public String getEndpoint() {
-        return endpoint;
+        return com.muzlik.pvpcombat.tracking.ServerTracker.getApiEndpoint();
     }
 
     public String getApiKey() {

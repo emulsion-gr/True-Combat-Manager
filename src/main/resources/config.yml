@@ -855,15 +855,15 @@ replay:
 # player count, version, and other stats. Only the plugin (with the
 # correct API key) can submit data — the website rejects unauthenticated
 # requests.
+#
+# NOTE: The API endpoint is hardcoded in the plugin and cannot be changed.
+# Only the api-key needs to match the tracking website's TRACKER_API_KEY.
 server-tracking:
   # Enable server tracking heartbeat
   enabled: false
 
-  # URL of the tracking website API endpoint (e.g. https://your-app.vercel.app/api/servers/heartbeat)
-  endpoint: ""
-
   # Secret API key used to authenticate heartbeat requests.
-  # Must match the key configured on the tracking website.
+  # Must match the TRACKER_API_KEY environment variable on the tracking website.
   # Generate a strong random key and keep it secret.
   api-key: ""
 
