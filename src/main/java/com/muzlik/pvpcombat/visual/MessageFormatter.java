@@ -2,10 +2,11 @@ package com.muzlik.pvpcombat.visual;
 
 import com.muzlik.pvpcombat.core.PvPCombatPlugin;
 import com.muzlik.pvpcombat.data.VisualPreferences;
-import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
-
+import com.muzlik.pvpcombat.utils.CompatibilityAPI;
+import com.muzlik.pvpcombat.utils.CompatibilityManager;
+import com.muzlik.pvpcombat.utils.VersionCompatibility;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.attribute.Attribute;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,11 +15,16 @@ import java.util.regex.Pattern;
 
 /**
  * Advanced message formatter with HEX color support, placeholders, and theme-based styling.
+ *
+ * <p>Delegates color code translation to {@link CompatibilityAPI} so the same
+ * formatter works across Minecraft versions (legacy ChatColor on 1.19.x,
+ * Adventure Component API on 1.20+).</p>
  */
 public class MessageFormatter {
 
     private final PvPCombatPlugin plugin;
     private final Map<String, MessageStyle> messageStyles;
+    private final CompatibilityAPI compatibility;
 
     // Regex patterns for HEX colors and placeholders
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
@@ -27,11 +33,13 @@ public class MessageFormatter {
     public MessageFormatter(PvPCombatPlugin plugin) {
         this.plugin = plugin;
         this.messageStyles = new HashMap<>();
+        this.compatibility = CompatibilityManager.create(plugin);
         loadMessageStyles();
     }
 
     /**
      * Formats a message with placeholders and colors.
+     * Color code translation is delegated to the version-appropriate adapter.
      */
     public String formatMessage(String message, Player player, Map<String, Object> placeholders) {
         if (message == null || message.isEmpty()) {
@@ -44,8 +52,8 @@ public class MessageFormatter {
         // Apply HEX colors
         message = applyHexColors(message);
 
-        // Convert legacy color codes
-        message = ChatColor.translateAlternateColorCodes('&', message);
+        // Convert legacy color codes via compatibility layer
+        message = compatibility.translateColor(message);
 
         return message;
     }
@@ -130,13 +138,10 @@ public class MessageFormatter {
 
     /**
      * Applies HEX color codes to messages.
+     * HEX colors are supported on Minecraft 1.16+.
      */
     private String applyHexColors(String message) {
-        if (!plugin.getServer().getVersion().contains("1.16") &&
-            !plugin.getServer().getVersion().contains("1.17") &&
-            !plugin.getServer().getVersion().contains("1.18") &&
-            !plugin.getServer().getVersion().contains("1.19") &&
-            !plugin.getServer().getVersion().contains("1.20")) {
+        if (!VersionCompatibility.isAtLeast(1, 16, 0)) {
             // HEX colors not supported in older versions
             return message;
         }

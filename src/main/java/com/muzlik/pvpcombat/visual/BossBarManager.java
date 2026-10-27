@@ -4,6 +4,8 @@ import com.muzlik.pvpcombat.combat.CombatManager;
 import com.muzlik.pvpcombat.core.PvPCombatPlugin;
 import com.muzlik.pvpcombat.data.CombatSession;
 import com.muzlik.pvpcombat.interfaces.IConfigManager;
+import com.muzlik.pvpcombat.utils.CompatibilityAPI;
+import com.muzlik.pvpcombat.utils.CompatibilityManager;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -21,11 +23,13 @@ public class BossBarManager {
     private final PvPCombatPlugin plugin;
     private final Map<String, BossBar> activeBossBars;
     private final ThemeManager themeManager;
+    private final CompatibilityAPI compatibility;
 
     public BossBarManager(PvPCombatPlugin plugin, IConfigManager configManager) {
         this.plugin = plugin;
         this.activeBossBars = new ConcurrentHashMap<>();
         this.themeManager = new ThemeManager(configManager, plugin.getLogger());
+        this.compatibility = CompatibilityManager.create(plugin);
     }
 
     /**
@@ -223,7 +227,7 @@ public class BossBarManager {
 
         String title = formatter.formatMessage(theme.getBossBarTitle(), session.getAttacker(), placeholders);
 
-        BossBar bossBar = Bukkit.createBossBar(
+        BossBar bossBar = compatibility.createBossBar(
             title,
             theme.getBossBarColor(),
             theme.getBossBarStyle()

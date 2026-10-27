@@ -23,6 +23,7 @@ import com.muzlik.pvpcombat.restrictions.RestrictionManager;
 import com.muzlik.pvpcombat.combat.AntiInterferenceManager;
 import com.muzlik.pvpcombat.protection.NewbieProtection;
 import com.muzlik.pvpcombat.tracking.ServerTracker;
+import com.muzlik.pvpcombat.tracking.VersionChecker;
 import com.muzlik.pvpcombat.config.ServerTrackingConfig;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -47,6 +48,7 @@ public class PluginManager {
     private IDatabaseManager databaseManager;
     private CombatLogger combatLogger;
     private ServerTracker serverTracker;
+    private VersionChecker versionChecker;
 
     public PluginManager(PvPCombatPlugin plugin) {
         this.plugin = plugin;
@@ -91,6 +93,9 @@ public class PluginManager {
             plugin.getLogger().warning("ConfigManager is not of expected type — server tracking disabled.");
             this.serverTracker = null;
         }
+
+        // Initialize version checker for update notifications
+        this.versionChecker = new VersionChecker(plugin);
 
         plugin.getLogger().info("Plugin managers initialized successfully.");
     }
@@ -170,6 +175,14 @@ public class PluginManager {
         // Start server tracking heartbeat after config is loaded
         if (serverTracker != null) {
             serverTracker.start();
+        }
+
+        // Check for plugin updates after config is loaded
+        if (versionChecker != null) {
+            versionChecker.checkForUpdates();
+            // Schedule periodic update checks every 6 hours (6 * 60 * 60 * 20 ticks)
+            Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, versionChecker::checkForUpdates,
+                6L * 60 * 60 * 20, 6L * 60 * 60 * 20);
         }
     }
 
@@ -265,5 +278,9 @@ public class PluginManager {
 
     public ServerTracker getServerTracker() {
         return serverTracker;
+    }
+
+    public VersionChecker getVersionChecker() {
+        return versionChecker;
     }
 }

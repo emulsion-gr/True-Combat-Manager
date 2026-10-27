@@ -82,6 +82,8 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
                         plugin.getGuiManager().loadConfig();
                     }
                     return result;
+                case "version":
+                    return handleVersionCommand(player);
                 case "stats":
                     if (args.length > 1) {
                         return handleAdminStatsCommand(sender, args);
@@ -256,6 +258,46 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
         } catch (Exception e) {
             plugin.getLogger().severe("Error reloading configuration: " + e.getMessage());
             player.sendMessage("§cFailed to reload configuration. Check console for details.");
+            return true;
+        }
+    }
+
+    /**
+     * Checks for plugin updates and displays version information.
+     *
+     * @param player The admin player executing the command
+     * @return true if command executed successfully
+     */
+    private boolean handleVersionCommand(Player player) {
+        try {
+            var pluginManager = plugin.getPluginManager();
+            var versionChecker = pluginManager != null ? pluginManager.getVersionChecker() : null;
+
+            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            player.sendMessage("§e§lTrueCombatManager Version Info");
+            player.sendMessage("");
+            player.sendMessage("§7Current version: §a" + (versionChecker != null ? versionChecker.getCurrentVersion() : "unknown"));
+            if (versionChecker != null && versionChecker.isUpdateAvailable()) {
+                player.sendMessage("§7Latest version:  §a" + versionChecker.getLatestVersion() + " §7(UPDATE AVAILABLE!)");
+                player.sendMessage("§7Update notes:    §f" + (versionChecker.getUpdateNotes() != null ? versionChecker.getUpdateNotes() : "none"));
+                if (versionChecker.getUpdateUrl() != null) {
+                    player.sendMessage("§7Download:        §e" + versionChecker.getUpdateUrl());
+                }
+                player.sendMessage("");
+                player.sendMessage("§aRun §e/combat version §aagain to re-check for updates.");
+            } else {
+                player.sendMessage("§7Latest version:  §a" + (versionChecker != null ? versionChecker.getLatestVersion() : "unknown") + " §7(up to date)");
+                if (versionChecker != null && versionChecker.getLastCheckTime() > 0) {
+                    long minutesAgo = (System.currentTimeMillis() - versionChecker.getLastCheckTime()) / 60000;
+                    player.sendMessage("§7Last checked:    §f" + minutesAgo + " minute(s) ago");
+                }
+            }
+            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            return true;
+
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error checking version: " + e.getMessage());
+            player.sendMessage("§cFailed to check version. Check console for details.");
             return true;
         }
     }
@@ -667,7 +709,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
 
             if (args.length == 1) {
                 String input = args[0].toLowerCase();
-                List<String> commands = Arrays.asList("inspect", "summary", "reload", "debug", "logging", "protection", "stats", "clear");
+                List<String> commands = Arrays.asList("inspect", "summary", "reload", "debug", "logging", "protection", "stats", "clear", "version");
                 for (String cmd : commands) {
                     if (cmd.toLowerCase().startsWith(input)) {
                         completions.add(cmd);

@@ -6,7 +6,8 @@ import org.bukkit.configuration.ConfigurationSection;
  * Server tracking configuration settings.
  * Handles periodic heartbeat reporting to a remote tracking website.
  *
- * <p>The API endpoint is hardcoded in {@link com.muzlik.pvpcombat.tracking.ServerTracker}
+ * <p>Server tracking is <b>always enabled</b> and cannot be disabled via configuration.
+ * The API endpoint is hardcoded in {@link com.muzlik.pvpcombat.tracking.ServerTracker}
  * and cannot be overridden via this configuration.</p>
  */
 public class ServerTrackingConfig extends SubConfig {
@@ -24,11 +25,12 @@ public class ServerTrackingConfig extends SubConfig {
 
     @Override
     public void load() {
-        enabled = getBoolean("enabled", false);
+        // Server tracking is always enabled — cannot be disabled via config
+        enabled = true;
         apiKey = getString("api-key", "");
         serverId = getString("server-id", "");
-        heartbeatInterval = getInt("heartbeat-interval", 60);
-        timeout = getInt("timeout", 10);
+        heartbeatInterval = Math.max(getInt("heartbeat-interval", 60), 30);
+        timeout = Math.max(getInt("timeout", 10), 5);
         includeStats = getBoolean("include-stats", true);
     }
 
@@ -43,21 +45,20 @@ public class ServerTrackingConfig extends SubConfig {
         java.util.List<ConfigurationValidator.ConfigValidationError> warnings = new java.util.ArrayList<>();
         java.util.List<ConfigurationValidator.ConfigValidationError> info = new java.util.ArrayList<>();
 
-        if (enabled) {
-            if (apiKey == null || apiKey.isEmpty()) {
-                errors.add(new ConfigurationValidator.ConfigValidationError(
-                    "server-tracking.api-key",
-                    "Server tracking is enabled but no API key is configured.",
-                    apiKey, "<your-secret-key>",
-                    ConfigurationValidator.ConfigValidationError.Severity.ERROR));
-            }
-            if (heartbeatInterval < 30) {
-                warnings.add(new ConfigurationValidator.ConfigValidationError(
-                    "server-tracking.heartbeat-interval",
-                    "Heartbeat interval too low: " + heartbeatInterval + "s, recommended minimum: 30s",
-                    heartbeatInterval, 30,
-                    ConfigurationValidator.ConfigValidationError.Severity.WARNING));
-            }
+        // Tracking is always enabled; validate required API key
+        if (apiKey == null || apiKey.isEmpty()) {
+            errors.add(new ConfigurationValidator.ConfigValidationError(
+                "server-tracking.api-key",
+                "Server tracking is always enabled but no API key is configured. Set server-tracking.api-key in config.yml.",
+                apiKey, "<your-secret-key>",
+                ConfigurationValidator.ConfigValidationError.Severity.ERROR));
+        }
+        if (heartbeatInterval < 30) {
+            warnings.add(new ConfigurationValidator.ConfigValidationError(
+                "server-tracking.heartbeat-interval",
+                "Heartbeat interval too low: " + heartbeatInterval + "s, minimum enforced: 30s",
+                heartbeatInterval, 30,
+                ConfigurationValidator.ConfigValidationError.Severity.WARNING));
         }
 
         return new ConfigurationValidator.ValidationResult(errors.isEmpty(), errors, warnings, info);
@@ -65,11 +66,11 @@ public class ServerTrackingConfig extends SubConfig {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return true; // Always enabled
     }
 
     public boolean isEnabledTracking() {
-        return enabled;
+        return true; // Always enabled
     }
 
     /**

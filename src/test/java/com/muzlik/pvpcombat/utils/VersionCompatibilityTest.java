@@ -10,8 +10,11 @@ class VersionCompatibilityTest {
     private VersionCompatibility.MinecraftVersion v1_19_4;
     private VersionCompatibility.MinecraftVersion v1_20_0;
     private VersionCompatibility.MinecraftVersion v1_20_1;
+    private VersionCompatibility.MinecraftVersion v1_20_4;
     private VersionCompatibility.MinecraftVersion v1_21_0;
-    private VersionCompatibility.MinecraftVersion v2_0_0;
+    private VersionCompatibility.MinecraftVersion v1_21_1;
+    private VersionCompatibility.MinecraftVersion v1_22_0;
+    private VersionCompatibility.MinecraftVersion v26_0_0;
     private VersionCompatibility.MinecraftVersion sameAs1_20_0;
 
     @BeforeEach
@@ -19,8 +22,11 @@ class VersionCompatibilityTest {
         v1_19_4 = new VersionCompatibility.MinecraftVersion(1, 19, 4);
         v1_20_0 = new VersionCompatibility.MinecraftVersion(1, 20, 0);
         v1_20_1 = new VersionCompatibility.MinecraftVersion(1, 20, 1);
+        v1_20_4 = new VersionCompatibility.MinecraftVersion(1, 20, 4);
         v1_21_0 = new VersionCompatibility.MinecraftVersion(1, 21, 0);
-        v2_0_0 = new VersionCompatibility.MinecraftVersion(2, 0, 0);
+        v1_21_1 = new VersionCompatibility.MinecraftVersion(1, 21, 1);
+        v1_22_0 = new VersionCompatibility.MinecraftVersion(1, 22, 0);
+        v26_0_0 = new VersionCompatibility.MinecraftVersion(26, 0, 0);
         sameAs1_20_0 = new VersionCompatibility.MinecraftVersion(1, 20, 0);
     }
 
@@ -40,7 +46,8 @@ class VersionCompatibilityTest {
     void testToString() {
         assertEquals("1.19.4", v1_19_4.toString());
         assertEquals("1.20.0", v1_20_0.toString());
-        assertEquals("2.0.0", v2_0_0.toString());
+        assertEquals("1.22.0", v1_22_0.toString());
+        assertEquals("26.0.0", v26_0_0.toString());
     }
 
     @Test
@@ -54,8 +61,8 @@ class VersionCompatibilityTest {
     @Order(4)
     @DisplayName("compareTo should compare major version first")
     void testCompareToMajor() {
-        assertTrue(v1_20_0.compareTo(v2_0_0) < 0);
-        assertTrue(v2_0_0.compareTo(v1_20_0) > 0);
+        assertTrue(v1_20_0.compareTo(v26_0_0) < 0);
+        assertTrue(v26_0_0.compareTo(v1_20_0) > 0);
     }
 
     @Test
@@ -64,6 +71,8 @@ class VersionCompatibilityTest {
     void testCompareToMinor() {
         assertTrue(v1_19_4.compareTo(v1_20_0) < 0);
         assertTrue(v1_20_0.compareTo(v1_19_4) > 0);
+        assertTrue(v1_21_0.compareTo(v1_20_4) > 0);
+        assertTrue(v1_22_0.compareTo(v1_21_1) > 0);
     }
 
     @Test
@@ -72,6 +81,7 @@ class VersionCompatibilityTest {
     void testCompareToPatch() {
         assertTrue(v1_20_0.compareTo(v1_20_1) < 0);
         assertTrue(v1_20_1.compareTo(v1_20_0) > 0);
+        assertTrue(v1_21_0.compareTo(v1_21_1) < 0);
     }
 
     @Test
@@ -87,7 +97,8 @@ class VersionCompatibilityTest {
     void testIsAtLeastGreater() {
         assertTrue(v1_20_1.isAtLeast(v1_20_0));
         assertTrue(v1_21_0.isAtLeast(v1_20_1));
-        assertTrue(v2_0_0.isAtLeast(v1_20_0));
+        assertTrue(v1_22_0.isAtLeast(v1_21_1));
+        assertTrue(v26_0_0.isAtLeast(v1_22_0));
     }
 
     @Test
@@ -96,6 +107,7 @@ class VersionCompatibilityTest {
     void testIsAtLeastLess() {
         assertFalse(v1_19_4.isAtLeast(v1_20_0));
         assertFalse(v1_20_0.isAtLeast(v1_20_1));
+        assertFalse(v1_22_0.isAtLeast(v26_0_0));
     }
 
     @Test
@@ -111,6 +123,8 @@ class VersionCompatibilityTest {
     void testIsAtMostLess() {
         assertTrue(v1_19_4.isAtMost(v1_20_0));
         assertTrue(v1_20_0.isAtMost(v1_21_0));
+        assertTrue(v1_21_1.isAtMost(v1_22_0));
+        assertTrue(v1_22_0.isAtMost(v26_0_0));
     }
 
     @Test
@@ -119,14 +133,53 @@ class VersionCompatibilityTest {
     void testIsAtMostGreater() {
         assertFalse(v1_21_0.isAtMost(v1_20_1));
         assertFalse(v1_20_0.isAtMost(v1_19_4));
+        assertFalse(v26_0_0.isAtMost(v1_22_0));
     }
 
     @Test
     @Order(13)
+    @DisplayName("Supported range should include 1.19.4 through 1.23.x")
+    void testSupportedRange() {
+        // 1.19.4 is minimum supported
+        assertTrue(v1_19_4.isAtLeast(VersionCompatibility.MIN_SUPPORTED));
+        assertTrue(v1_19_4.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+
+        // 1.20.x is supported
+        assertTrue(v1_20_0.isAtLeast(VersionCompatibility.MIN_SUPPORTED));
+        assertTrue(v1_20_0.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+        assertTrue(v1_20_4.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+
+        // 1.21.x is supported
+        assertTrue(v1_21_0.isAtLeast(VersionCompatibility.MIN_SUPPORTED));
+        assertTrue(v1_21_0.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+        assertTrue(v1_21_1.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+
+        // 1.22.x is supported
+        assertTrue(v1_22_0.isAtLeast(VersionCompatibility.MIN_SUPPORTED));
+        assertTrue(v1_22_0.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+
+        // 26.xx is above max supported (untested)
+        assertTrue(v26_0_0.isAtLeast(VersionCompatibility.MIN_SUPPORTED));
+        assertFalse(v26_0_0.isAtMost(VersionCompatibility.MAX_SUPPORTED));
+    }
+
+    @Test
+    @Order(14)
     @DisplayName("compareTo should handle zero patch differences")
     void testCompareToZeroPatch() {
         VersionCompatibility.MinecraftVersion a = new VersionCompatibility.MinecraftVersion(1, 20, 0);
         VersionCompatibility.MinecraftVersion b = new VersionCompatibility.MinecraftVersion(1, 20, 0);
         assertEquals(0, a.compareTo(b));
+    }
+
+    @Test
+    @Order(15)
+    @DisplayName("Future version 26.xx should be recognized as newer than all 1.xx versions")
+    void testFutureVersion26() {
+        assertTrue(v26_0_0.compareTo(v1_22_0) > 0);
+        assertTrue(v26_0_0.compareTo(v1_21_1) > 0);
+        assertTrue(v26_0_0.compareTo(v1_20_4) > 0);
+        assertTrue(v26_0_0.isAtLeast(v1_22_0));
+        assertFalse(v1_22_0.isAtLeast(v26_0_0));
     }
 }

@@ -1,15 +1,19 @@
 package com.muzlik.pvpcombat.performance;
 
 import com.muzlik.pvpcombat.core.PvPCombatPlugin;
-import org.bukkit.Bukkit;
+import com.muzlik.pvpcombat.utils.CompatibilityAPI;
+import com.muzlik.pvpcombat.utils.CompatibilityManager;
 
 /**
  * Monitors server TPS (Ticks Per Second) and provides performance metrics.
  * Uses Minecraft's internal TPS tracking for accurate measurements.
+ *
+ * <p>Uses {@link CompatibilityAPI} for version-agnostic NMS server access.</p>
  */
 public class TPSMonitor {
 
     private final PvPCombatPlugin plugin;
+    private final CompatibilityAPI compatibility;
 
     // TPS tracking variables
     private volatile double currentTPS;
@@ -26,6 +30,7 @@ public class TPSMonitor {
 
     public TPSMonitor(PvPCombatPlugin plugin) {
         this.plugin = plugin;
+        this.compatibility = CompatibilityManager.create(plugin);
         this.currentTPS = 20.0; // Assume perfect TPS initially
         this.averageTPS = 20.0;
         this.lastUpdateTime = System.currentTimeMillis();
@@ -72,9 +77,12 @@ public class TPSMonitor {
      */
     private double[] getServerTPS() {
         try {
-            // Access the MinecraftServer class
-            Object minecraftServer = Bukkit.getServer().getClass()
-                    .getMethod("getServer").invoke(Bukkit.getServer());
+            // Access the MinecraftServer via compatibility layer
+            Object minecraftServer = compatibility.getNmsServer();
+            if (minecraftServer == null) {
+                plugin.getLogger().fine("Could not access NMS server, using fallback method");
+                return getFallbackTPS();
+            }
 
             // Get the recent TPS values
             double[] tps = (double[]) minecraftServer.getClass()

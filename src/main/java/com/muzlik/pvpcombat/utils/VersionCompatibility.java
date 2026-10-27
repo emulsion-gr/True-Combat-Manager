@@ -62,15 +62,27 @@ public class VersionCompatibility {
     }
     
     // Supported version range
-    private static final MinecraftVersion MIN_SUPPORTED = new MinecraftVersion(1, 19, 4);
-    private static final MinecraftVersion MAX_SUPPORTED = new MinecraftVersion(1, 21, 99); // 1.21.x
+    static final MinecraftVersion MIN_SUPPORTED = new MinecraftVersion(1, 19, 4);
+    static final MinecraftVersion MAX_SUPPORTED = new MinecraftVersion(1, 23, 99); // 1.23.x and below
+    
+    // Version tiers for compatibility decisions
+    static final MinecraftVersion V1_20_COMPONENT_API = new MinecraftVersion(1, 20, 0); // Adventure Component API introduced
+    static final MinecraftVersion V1_22_ACTIONBAR_CHANGES = new MinecraftVersion(1, 22, 0); // ActionBar API refinements
+    static final MinecraftVersion V26_MAJOR_REWORK = new MinecraftVersion(26, 0, 0); // Major rework version
     
     /**
      * Detects the current Minecraft version on server startup.
      * Logs warnings for unsupported versions.
      */
     public static void detectVersion() {
-        String bukkitVersion = Bukkit.getVersion();
+        String bukkitVersion;
+        try {
+            bukkitVersion = Bukkit.getVersion();
+        } catch (Exception e) {
+            // Bukkit server not available (e.g., in test environments)
+            bukkitVersion = "(MC: 1.20.0)";
+            logger.warning("Could not detect Minecraft version, defaulting to 1.20.0: " + e.getMessage());
+        }
         logger.info("Detecting Minecraft version from: " + bukkitVersion);
         
         Matcher matcher = VERSION_PATTERN.matcher(bukkitVersion);
@@ -157,6 +169,39 @@ public class VersionCompatibility {
         MinecraftVersion version = getVersion();
         return version.isAtLeast(new MinecraftVersion(major, minor, patch));
     }
+
+    /**
+     * Checks if the current version uses the Adventure Component API (1.20+).
+     * In 1.20+, ChatColor is deprecated in favor of net.kyori.adventure.text.Component.
+     */
+    public static boolean usesComponentAPI() {
+        return isAtLeast(1, 20, 0);
+    }
+
+    /**
+     * Checks if the current version has ActionBar API refinements (1.22+).
+     */
+    public static boolean usesRefinedActionBar() {
+        return isAtLeast(1, 22, 0);
+    }
+
+    /**
+     * Checks if the current version is a major rework version (26+).
+     */
+    public static boolean isMajorRework() {
+        return isAtLeast(26, 0, 0);
+    }
+
+    /**
+     * Gets a human-readable compatibility tier description.
+     */
+    public static String getCompatibilityTier() {
+        MinecraftVersion v = getVersion();
+        if (v.isAtLeast(V26_MAJOR_REWORK)) return "MAJOR_REWORK (26+)";
+        if (v.isAtLeast(V1_22_ACTIONBAR_CHANGES)) return "REFINED (1.22+)";
+        if (v.isAtLeast(V1_20_COMPONENT_API)) return "MODERN (1.20+)";
+        return "LEGACY (1.19.x)";
+    }
     
     /**
      * Checks if the current version is at most the specified version.
@@ -196,6 +241,7 @@ public class VersionCompatibility {
         logger.info("════════════════════════════════════════════════════════════════");
         logger.info("  Minecraft Version: " + getVersion());
         logger.info("  Supported Range:   " + MIN_SUPPORTED + " - " + MAX_SUPPORTED);
+        logger.info("  Compatibility Tier:" + getCompatibilityTier());
         logger.info("  Status:            " + (isSupported() ? "✓ SUPPORTED" : "⚠ UNSUPPORTED"));
         logger.info("  Server Software:   " + Bukkit.getName() + " " + Bukkit.getVersion());
         logger.info("════════════════════════════════════════════════════════════════");

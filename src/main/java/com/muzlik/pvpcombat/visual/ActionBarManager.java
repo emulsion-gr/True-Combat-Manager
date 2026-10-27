@@ -1,13 +1,12 @@
 package com.muzlik.pvpcombat.visual;
 
-import com.muzlik.pvpcombat.core.PvPCombatPlugin;
-import org.bukkit.entity.Player;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.scheduler.BukkitRunnable;
-
 import com.muzlik.pvpcombat.combat.CombatManager;
+import com.muzlik.pvpcombat.core.PvPCombatPlugin;
 import com.muzlik.pvpcombat.data.CombatSession;
+import com.muzlik.pvpcombat.utils.CompatibilityAPI;
+import com.muzlik.pvpcombat.utils.CompatibilityManager;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Map;
 import java.util.UUID;
@@ -15,15 +14,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages action bar messages with HEX color support and real-time updates.
+ *
+ * <p>Uses {@link CompatibilityAPI} to send action bars in a version-agnostic way,
+ * supporting Minecraft 1.19.x through 1.23+ and future major versions.</p>
  */
 public class ActionBarManager {
 
     private final PvPCombatPlugin plugin;
     private final Map<UUID, BukkitRunnable> activeActionBars;
+    private final CompatibilityAPI compatibility;
 
     public ActionBarManager(PvPCombatPlugin plugin) {
         this.plugin = plugin;
         this.activeActionBars = new ConcurrentHashMap<>();
+        this.compatibility = CompatibilityManager.create(plugin);
     }
 
     /**
@@ -33,7 +37,7 @@ public class ActionBarManager {
         if (player == null || !player.isOnline()) {
             return;
         }
-        
+
         if (!plugin.getConfig().getBoolean("visual.actionbar.enabled", true)) {
             return;
         }
@@ -43,8 +47,7 @@ public class ActionBarManager {
             }
         }
 
-        String formattedMessage = formatMessage(message, player);
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(formattedMessage));
+        compatibility.sendActionBar(player, message);
     }
 
     /**
@@ -61,7 +64,7 @@ public class ActionBarManager {
             @Override
             public void run() {
                 // Check if players are still online and in combat
-                if (player1 == null || player2 == null || 
+                if (player1 == null || player2 == null ||
                     !player1.isOnline() || !player2.isOnline() ||
                     !plugin.getCombatManager().isInCombat(player1) ||
                     !plugin.getCombatManager().isInCombat(player2)) {
@@ -81,7 +84,7 @@ public class ActionBarManager {
                     sendActionBar(player1, message1);
                 } else {
                     // Clear if it was turned off during combat
-                    player1.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(""));
+                    compatibility.clearActionBar(player1);
                 }
 
                 if (player2Enabled) {
@@ -89,7 +92,7 @@ public class ActionBarManager {
                     sendActionBar(player2, message2);
                 } else {
                     // Clear if it was turned off during combat
-                    player2.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(""));
+                    compatibility.clearActionBar(player2);
                 }
             }
         };
@@ -108,7 +111,7 @@ public class ActionBarManager {
             task.cancel();
         }
         // Send empty message to clear action bar
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(""));
+        compatibility.clearActionBar(player);
     }
 
     /**
@@ -135,7 +138,7 @@ public class ActionBarManager {
         placeholders.put("time_left", String.valueOf(timeLeft));
 
         MessageFormatter formatter = new MessageFormatter(plugin);
-        return formatter.formatMessage(format, player, placeholders);
+        return compatibility.translateColor(formatter.formatMessage(format, player, placeholders));
     }
 
     /**
@@ -150,14 +153,6 @@ public class ActionBarManager {
             }
         }
         return 0;
-    }
-
-    /**
-     * Formats message with HEX color support and placeholders using MessageFormatter.
-     */
-    private String formatMessage(String message, Player player) {
-        MessageFormatter formatter = new MessageFormatter(plugin);
-        return formatter.formatMessage(message, player, new java.util.HashMap<>());
     }
 
     /**

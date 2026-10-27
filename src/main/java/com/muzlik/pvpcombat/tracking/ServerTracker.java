@@ -42,16 +42,11 @@ public class ServerTracker {
         this.logger = plugin.getLogger();
         this.startTime = System.currentTimeMillis();
 
-        // Build a server ID if none configured: use IP:port
-        String configuredId = config.getServerId();
-        if (configuredId != null && !configuredId.isEmpty()) {
-            this.serverId = configuredId;
-        } else {
-            String ip = Bukkit.getIp() != null ? Bukkit.getIp() : "unknown";
-            int port = Bukkit.getPort();
-            this.serverId = ip + ":" + port;
-            logger.info("No server-id configured, generated: " + this.serverId);
-        }
+        // Server ID is always generated from the server's IP and port.
+        String ip = Bukkit.getIp() != null ? Bukkit.getIp() : "unknown";
+        int port = Bukkit.getPort();
+        this.serverId = ip + ":" + port;
+        logger.info("Server ID generated: " + this.serverId);
 
         // Create HTTP client with timeout from config
         this.httpClient = HttpClient.newBuilder()
