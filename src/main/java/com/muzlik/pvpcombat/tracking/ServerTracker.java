@@ -27,6 +27,9 @@ public class ServerTracker {
     /** Hardcoded tracking website API endpoint — cannot be overridden via config. */
     private static final String API_ENDPOINT = "https://truecombat-manager.vercel.app/api/servers/heartbeat";
 
+    /** Hardcoded API key — must match TRACKER_API_KEY on the tracking website. */
+    private static final String API_KEY = "tcm_live_re5r7658yiugkhvfir86669780yougyi";
+
     private final PvPCombatPlugin plugin;
     private final ServerTrackingConfig config;
     private final Logger logger;
@@ -90,15 +93,13 @@ public class ServerTracker {
      * Sends a single heartbeat request asynchronously to the hardcoded endpoint.
      */
     private void sendHeartbeat() {
-        String apiKey = config.getApiKey();
-
         ServerInfo info = buildServerInfo();
         String json = info.toJson();
 
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(API_ENDPOINT))
             .header("Content-Type", "application/json")
-            .header("X-API-Key", apiKey != null ? apiKey : "")
+            .header("X-API-Key", API_KEY)
             .header("User-Agent", "TrueCombatManager/" + plugin.getDescription().getVersion())
             .POST(HttpRequest.BodyPublishers.ofString(json))
             .timeout(Duration.ofSeconds(config.getTimeout()))
